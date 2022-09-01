@@ -1,0 +1,2 @@
+autostart = '@PLUGIN_CUBE_AUTOSTART@'
+precondition = ["Graphics"]
