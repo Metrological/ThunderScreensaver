@@ -23,6 +23,10 @@ shader_files = [
     {
         "vertexfile": "Common-Version-100-ES.vert",
         "fragmentfile": "Rotating-Cube.frag"
+    },
+    {
+        "vertexfile": "Common-Version-100-ES.vert",
+        "fragmentfile": "Rotating-Square.frag"
     }
 ]
 
