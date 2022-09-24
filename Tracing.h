@@ -54,5 +54,5 @@ namespace Trace {
     private:
         std::string _text;
     }; // class EGL
-} // namespace Cube
+} // namespace Screensaver
 } // namespace WPEFramework
