@@ -69,6 +69,7 @@ namespace Plugin {
         , _interval(5000)
         , _timeOut(0)
         , _startTime(0)
+        , _reportFPS(false)
         , _inputSink(*this)
         , _ticker(Core::ProxyType<Tick>::Create(*this))
         , _inputServer(connectorNameVirtualInput)
@@ -95,6 +96,10 @@ namespace Plugin {
 
         _timeOut = config.TimeOut.Value();
         _startTime = Core::Time::Now().Add(_timeOut * 1000).Ticks();
+
+        _interval = config.Interval.Value() * 1000;
+
+        _reportFPS = config.ReportFPS.Value();
 
         _inputServer.Callback(&_inputSink);
 

@@ -43,6 +43,9 @@ set(PLUGIN_SCREENSAVER_TIMEOUT 30 CACHE STRING "Timeout in seconds of inactivaty
 set(PLUGIN_SCREENSAVER_FADEIN 1000 CACHE STRING "Fade in time in milliseconds")
 set(PLUGIN_SCREENSAVER_INSTANT true CACHE STRING "Instant start the screensaver after plugin start")
 
+set(PLUGIN_SCREENSAVER_INTERVAL 10 CACHE STRING "Interval between checks to trigger the screensaver in seconds")
+set(PLUGIN_SCREENSAVER_REPORTFPS true CACHE STRING "Report FPS")
+
 add_library(${MODULE_NAME} SHARED
     Module.cpp
     EGLRender.cpp

@@ -7,6 +7,9 @@ configuration.add("timeout", '@PLUGIN_SCREENSAVER_TIMEOUT@')
 configuration.add("fadein", '@PLUGIN_SCREENSAVER_FADEIN@')
 configuration.add("instant", '@PLUGIN_SCREENSAVER_INSTANT@')
 
+configuration.add("interval", '@PLUGIN_SCREENSAVER_INTERVAL@')
+configuration.add("reportfps", '@PLUGIN_SCREENSAVER_REPORTFPS@')
+
 shader_files = [
     {
         "vertexfile": "Common-Version-100-ES.vert",
@@ -21,7 +24,7 @@ shader_files = [
         "fragmentfile": "Universe-of-Squares.frag"
     },
     {
-        "vertexfile": "Common-Version-100-ES.vert",
+        "vertexfile": "Common-Version-300-ES.vert",
         "fragmentfile": "Rotating-Cube.frag"
     },
     {

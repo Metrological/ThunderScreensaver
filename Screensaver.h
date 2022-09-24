@@ -156,6 +156,8 @@ namespace Plugin {
                 , TimeOut(15 * 60) /* 15 minutes in s */
                 , FadeIn(0) /* milliseconds*/
                 , Instant(false)
+                , Interval(5) /* seconds; 0 = no off*/
+                , ReportFPS(false)
                 , Models()
             {
                 Add(_T("height"), &Height);
@@ -164,6 +166,8 @@ namespace Plugin {
                 Add(_T("timeout"), &TimeOut);
                 Add(_T("fadein"), &FadeIn);
                 Add(_T("instant"), &Instant);
+                Add(_T("interval"), &Interval);
+                Add(_T("reportfps"), &ReportFPS);
                 Add(_T("models"), &Models);
             }
             ~Config()
@@ -177,6 +181,8 @@ namespace Plugin {
             Core::JSON::DecUInt16 TimeOut;
             Core::JSON::DecUInt16 FadeIn;
             Core::JSON::Boolean Instant;
+            Core::JSON::DecUInt8 Interval;
+            Core::JSON::Boolean ReportFPS;
             Core::JSON::ArrayType<Graphics::ModelConfig> Models;
         };
 
@@ -245,7 +251,9 @@ namespace Plugin {
                 _triggered = true;
             }
 
-            RenderUpdate();
+            if (_reportFPS == true) {
+                RenderUpdate();
+            }
 
             return _triggered;
         }
@@ -263,6 +271,8 @@ namespace Plugin {
         uint16_t _interval;
         uint16_t _timeOut;
         uint64_t _startTime;
+
+        bool _reportFPS;
 
         InputSink _inputSink;
         Core::ProxyType<Tick> _ticker;
