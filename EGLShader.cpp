@@ -40,8 +40,7 @@ namespace Graphics {
             if (IsValid() == false) {
                 _program = EGL::CreateProgram(_vertexShaderSource, _fragmentShaderSource);
 
-                if (glIsProgram(_program))
-                {
+                if (glIsProgram(_program)) {
                     glBindAttribLocation(_program, 0, "vPosition");
                     glBindAttribLocation(_program, 1, "vOpacity");
 
