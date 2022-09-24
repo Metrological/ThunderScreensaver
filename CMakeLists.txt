@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-project(Cube)
+project(Screensaver)
 
 cmake_minimum_required(VERSION 3.3)
 
@@ -31,22 +31,29 @@ find_package(${NAMESPACE}Plugins CONFIG REQUIRED)
 find_package(${NAMESPACE}Definitions CONFIG REQUIRED)
 find_package(CompileSettingsDebug CONFIG REQUIRED)
 find_package(compositorclient CONFIG REQUIRED)
+find_package(${NAMESPACE}VirtualInput CONFIG REQUIRED)
 
 add_subdirectory(esTransorm)
 
 add_subdirectory(simpleworker)
 
-set(PLUGIN_CUBE_AUTOSTART true CACHE STRING "Automaically start this plugin")
+set(PLUGIN_SCREENSAVER_AUTOSTART true CACHE STRING "Automatically start this plugin")
+
+set(PLUGIN_SCREENSAVER_TIMEOUT 30 CACHE STRING "Timeout in seconds of inactivaty to start the show the screensaver")
+set(PLUGIN_SCREENSAVER_FADEIN 1000 CACHE STRING "Fade in time in milliseconds")
+set(PLUGIN_SCREENSAVER_INSTANT true CACHE STRING "Instant start the screensaver after plugin start")
 
 add_library(${MODULE_NAME} SHARED
-    Cube.cpp
-    Module.cpp)
+    Module.cpp
+    EGLRender.cpp
+    EGLShader.cpp
+    Screensaver.cpp)
 
-target_sources(${MODULE_NAME} PRIVATE
-    EGLCube.cpp)
+#target_sources(${MODULE_NAME} PRIVATE
+#    EGLCube.cpp)
 
-# target_sources(${MODULE_NAME} PRIVATE
-#     EGLTriangle.cpp)
+#target_sources(${MODULE_NAME} PRIVATE
+#    EGLTriangle.cpp)
 
 set_target_properties(${MODULE_NAME} PROPERTIES
         CXX_STANDARD 11
@@ -57,11 +64,15 @@ target_link_libraries(${MODULE_NAME}
         esTransform::esTransform
         SimpleWorker::SimpleWorker
         compositorclient::compositorclient
+        ${NAMESPACE}VirtualInput::${NAMESPACE}VirtualInput
         CompileSettingsDebug::CompileSettingsDebug
         ${NAMESPACE}Plugins::${NAMESPACE}Plugins
         ${NAMESPACE}Definitions::${NAMESPACE}Definitions)
 
 install(TARGETS ${MODULE_NAME}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/${STORAGE_DIRECTORY}/plugins)
+
+install(DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/shaders
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/share/${NAMESPACE}/Screensaver)
 
 write_config()

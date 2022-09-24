@@ -1,11 +1,9 @@
 #include "Module.h"
 
 #include "EGLToolbox.h"
-#include "IRender.h"
+#include "IModel.h"
 
 #include "Tracing.h"
-
-#include <compositor/Client.h>
 
 #ifndef GL_ES_VERSION_2_0
 #include <GLES2/gl2.h>
@@ -18,60 +16,6 @@
 
 namespace WPEFramework {
 namespace Graphics {
-    GLuint LoadShader(GLenum type, const char* shaderSrc)
-    {
-        GLuint shader;
-        GLint compiled;
-
-        // Create the shader object
-        shader = glCreateShader(type);
-
-        if (shader == 0) {
-            return 0;
-        }
-
-        // Load the shader source
-        glShaderSource(shader, 1, &shaderSrc, NULL);
-
-        // Compile the shader
-        glCompileShader(shader);
-
-        // Check the compile status
-        glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
-
-        if (!compiled) {
-            TRACE(Trace::Error, ("Error compiling shader:\n%s", EGL::ShaderInfoLog(shader).c_str()));
-            glDeleteShader(shader);
-            return 0;
-        }
-
-        return shader;
-    }
-
-    static constexpr EGLint RedBufferSize = 8;
-    static constexpr EGLint GreenBufferSize = 8;
-    static constexpr EGLint BlueBufferSize = 8;
-    static constexpr EGLint AlphaBufferSize = 8;
-    static constexpr EGLint DepthBufferSize = 0;
-
-    constexpr EGLint context_attribs[] = {
-        EGL_CONTEXT_CLIENT_VERSION, 2,
-        EGL_NONE
-    };
-
-    constexpr EGLint config_attribs[] = {
-        EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-        EGL_RED_SIZE, RedBufferSize,
-        EGL_GREEN_SIZE, GreenBufferSize,
-        EGL_BLUE_SIZE, BlueBufferSize,
-        EGL_ALPHA_SIZE, AlphaBufferSize,
-        EGL_BUFFER_SIZE, RedBufferSize + GreenBufferSize + BlueBufferSize + AlphaBufferSize,
-        /* EGL_DEPTH_SIZE, (majorVersion == 2) ? 16 : 0, */
-        EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-        EGL_SAMPLES, 0,
-        EGL_NONE
-    };
-
     constexpr char vertex_shader_source[] = "#version 300 es                          \n"
                                             "layout(location = 0) in vec4 vPosition;  \n"
                                             "void main()                              \n"
@@ -91,206 +35,106 @@ namespace Graphics {
         -0.5f, -0.5f, 0.0f,
         0.5f, -0.5f, 0.0f };
 
-    class EGLTriangle : public IRender {
+    class EGLTriangle : public IModel {
     public:
         EGLTriangle(const EGLTriangle&) = delete;
         EGLTriangle& operator=(const EGLTriangle&) = delete;
 
         EGLTriangle()
-            : _display(nullptr)
-            , _surface(nullptr)
-            , _eglSurface(EGL_NO_SURFACE)
-            , _eglContext(EGL_NO_CONTEXT)
-            , _eglDisplay(EGL_NO_DISPLAY)
-            , _program(GL_FALSE)
-            , _width(0)
-            , _heigth(0)
-            , _frameCount(0)
+            : _program(GL_FALSE)
+            , _background(rand())
         {
         }
 
         virtual ~EGLTriangle()
         {
-
-            eglMakeCurrent(_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-
-            eglDestroyContext(_eglDisplay, _eglContext);
-            _eglContext = EGL_NO_CONTEXT;
-
-            eglDestroySurface(_eglDisplay, _eglSurface);
-            _eglSurface = EGL_NO_SURFACE;
-
-            glDeleteProgram(_program);
-
-            if (_surface != nullptr) {
-                _surface->Release();
-            }
-
-            if (_display != nullptr) {
-                _display->Release();
+            if (_program != EGL_FALSE) {
+                glDeleteProgram(_program);
             }
         }
 
-        uint32_t Frames() const override
+        void Process() override
         {
-            return _frameCount;
-        }
-
-        void Draw()
-        {
-            // Set the viewport
-            glViewport(0, 0, _width, _heigth);
-
+            static uint32_t frameNumber;
+            int r, g, b;
             // Clear the color buffer
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            r = (((_background & 0x00ff0000) >> 16) + frameNumber) % 512;
+            g = (((_background & 0x0000ff00) >> 8) + frameNumber) % 512;
+            b = ((_background & 0x000000ff) + frameNumber) % 512;
+
+            if (r >= 256)
+                r = 511 - r;
+            if (g >= 256)
+                g = 511 - g;
+            if (b >= 256)
+                b = 511 - b;
 
             // Use the program object
             glUseProgram(_program);
+
+            /*
+             * Different color every frame
+             */
+            glClearColor(r / 256.0, g / 256.0, b / 256.0, 1.0);
+            glClear(GL_COLOR_BUFFER_BIT);
 
             // Load the vertex data
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, vVertices);
             glEnableVertexAttribArray(0);
 
             glDrawArrays(GL_TRIANGLES, 0, 3);
+
+            ++frameNumber;
+
+            // printf("%s:%d [%s]\n", __FILE__, __LINE__, __FUNCTION__);
         }
 
-        void Present() override
+        bool Construct() override
         {
-            ASSERT(_eglDisplay != EGL_NO_DISPLAY);
-            ASSERT(_eglSurface != EGL_NO_SURFACE);
-            ASSERT(_eglContext != EGL_NO_CONTEXT);
+            GLuint programObject = EGL::CreateProgram(vertex_shader_source,fragment_shader_source);
+            ASSERT(programObject != GL_FALSE);
 
+            EGLint linked = EGL::LinkProgram(programObject);
 
-
-            // Make the context current
-            if (eglMakeCurrent(_eglDisplay, _eglSurface, _eglSurface, _eglContext) == EGL_TRUE) {
-                Draw();
-
-                if (eglSwapBuffers(_eglDisplay, _eglSurface) == TRUE) {
-                    ++_frameCount;
-                } else {
-                    TRACE(Trace::Error, ("eglSwapBuffers failed error=%s", EGL::ErrorString(eglGetError())));
-                }
-
+            if (linked == GL_TRUE) {
+                _program = programObject;
+                glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
             } else {
-                TRACE(Trace::Error, ("Unable to make EGL context current error=%s", EGL::ErrorString(eglGetError())));
-            }
-        }
-
-        bool Setup(const string& name, const uint32_t width, const uint32_t height) override
-        {
-            EGLint majorVersion(0);
-            EGLint minorVersion(0);
-            EGLint eglResult(0);
-            EGLint numConfigs(0);
-
-            // ==================================================================================
-            // Initialize CompositorClient
-            // ==================================================================================
-            TRACE(Trace::Information, ("Setup %s width=%d height=%d", name.c_str(), width, height));
-
-            _display = Compositor::IDisplay::Instance(name);
-            ASSERT(_display != nullptr);
-
-            _surface = _display->Create(name, width, height);
-            ASSERT(_surface != nullptr);
-
-            // ==================================================================================
-            // Initialize EGL
-            // ==================================================================================
-            _eglDisplay = eglGetDisplay(_display->Native());
-            ASSERT(_eglDisplay != EGL_NO_DISPLAY);
-
-            TRACE(Trace::Information, ("EGL Display %p", _eglDisplay));
-
-            eglResult = eglInitialize(_eglDisplay, &majorVersion, &minorVersion);
-            ASSERT(eglResult == EGL_TRUE);
-
-            eglResult = eglBindAPI(EGL_OPENGL_ES_API);
-            ASSERT(eglResult == EGL_TRUE);
-
-            TRACE(Trace::Information, ("Initialized EGL v%d.%d", majorVersion, minorVersion));
-
-            // Choose config
-            EGLConfig eglConfig;
-
-            eglResult = eglChooseConfig(_eglDisplay, config_attribs, &eglConfig, 1, &numConfigs);
-            ASSERT(eglResult == EGL_TRUE);
-
-            TRACE(Trace::Information, ("Choosen config: %s", EGL::ConfigInfoLog(_eglDisplay, eglConfig).c_str()));
-
-            // Create a surface
-            _eglSurface = eglCreateWindowSurface(_eglDisplay, eglConfig, _surface->Native(), nullptr);
-
-            eglQuerySurface(_eglDisplay, _eglSurface, EGL_WIDTH, &_width);
-            eglQuerySurface(_eglDisplay, _eglSurface, EGL_HEIGHT, &_heigth);
-
-            TRACE(Trace::Information, ("EGL surface dimension: %dx%d", _width, _heigth));
-
-            // Create a GL context
-            _eglContext = eglCreateContext(_eglDisplay, eglConfig, EGL_NO_CONTEXT, context_attribs);
-            ASSERT(_eglContext != EGL_NO_CONTEXT);
-
-            // Make the context current
-            if (eglMakeCurrent(_eglDisplay, _eglSurface, _eglSurface, _eglContext) != EGL_TRUE) {
-                TRACE(Trace::Error, ("Unable to make EGL context current error=%s", EGL::ErrorString(eglGetError())));
-                return false;
-            }
-
-            // ==================================================================================
-            // Initialize Triangle
-            // ==================================================================================
-
-            // Load the vertex/fragment shaders
-            GLuint vertexShader = LoadShader(GL_VERTEX_SHADER, vertex_shader_source);
-            GLuint fragmentShader = LoadShader(GL_FRAGMENT_SHADER, fragment_shader_source);
-
-            // Create the program object
-            GLuint programObject = glCreateProgram();
-
-            glAttachShader(programObject, vertexShader);
-            glAttachShader(programObject, fragmentShader);
-
-            // Link the program
-            glLinkProgram(programObject);
-
-            // Check the link status
-            GLint linked(0);
-            glGetProgramiv(programObject, GL_LINK_STATUS, &linked);
-
-            if (linked == GL_FALSE) {
                 TRACE(Trace::Error, ("Error linking program:\n%s", EGL::ProgramInfoLog(programObject).c_str()));
                 glDeleteProgram(programObject);
-            } else {
-                // Store the program object
-                _program = programObject;
-
-                glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
             }
 
-            return (linked != GL_FALSE);
+            return (linked == GL_TRUE);
+        }
+
+        void Position(const DimensionType& dimension) override
+        {
+        }
+
+        void Size(const SizeType& surfaceSize) override
+        {
+        }
+
+        void Opacity(const uint8_t opacity) override
+        {
+        }
+
+        bool IsValid() const override
+        {
+            return (_program != GL_FALSE);
         }
 
     private:
-        Compositor::IDisplay* _display;
-        Compositor::IDisplay::ISurface* _surface;
-
-        EGLSurface _eglSurface;
-        EGLContext _eglContext;
-        EGLDisplay _eglDisplay;
-
         GLuint _program;
-
-        EGLint _width;
-        EGLint _heigth;
-
-        uint32_t _frameCount;
+        GLuint _background;
     }; // class EGLTriangle
 
-    IRender* IRender::Instance()
+    Core::ProxyType<IModel> IModel::Create(const ModelConfig& config)
     {
-        static EGLTriangle _instance;
-        return &_instance;
+        Core::ProxyType<EGLTriangle> proxy = Core::ProxyType<EGLTriangle>::Create(config);
+
+        return Core::ProxyType<IModel>(proxy);
     }
 } // namespace Graphics
 } // namespace WPEFramework

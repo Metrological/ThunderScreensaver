@@ -20,69 +20,74 @@
 
 namespace WPEFramework {
 namespace EGL {
-    typedef std::map<GLenum, const char*> ShaderSourceList;
-
-    #define CASE_STR( value ) case value: return #value; 
-    const char* ErrorString( EGLint error )
+#define CASE_STR(value) \
+    case value:         \
+        return #value;
+    static inline const char* ErrorString(EGLint error)
     {
-        switch( error )
-        {
-        CASE_STR( EGL_SUCCESS             )
-        CASE_STR( EGL_NOT_INITIALIZED     )
-        CASE_STR( EGL_BAD_ACCESS          )
-        CASE_STR( EGL_BAD_ALLOC           )
-        CASE_STR( EGL_BAD_ATTRIBUTE       )
-        CASE_STR( EGL_BAD_CONTEXT         )
-        CASE_STR( EGL_BAD_CONFIG          )
-        CASE_STR( EGL_BAD_CURRENT_SURFACE )
-        CASE_STR( EGL_BAD_DISPLAY         )
-        CASE_STR( EGL_BAD_SURFACE         )
-        CASE_STR( EGL_BAD_MATCH           )
-        CASE_STR( EGL_BAD_PARAMETER       )
-        CASE_STR( EGL_BAD_NATIVE_PIXMAP   )
-        CASE_STR( EGL_BAD_NATIVE_WINDOW   )
-        CASE_STR( EGL_CONTEXT_LOST        )
-        default: return "Unknown";
+        switch (error) {
+            CASE_STR(EGL_SUCCESS)
+            CASE_STR(EGL_NOT_INITIALIZED)
+            CASE_STR(EGL_BAD_ACCESS)
+            CASE_STR(EGL_BAD_ALLOC)
+            CASE_STR(EGL_BAD_ATTRIBUTE)
+            CASE_STR(EGL_BAD_CONTEXT)
+            CASE_STR(EGL_BAD_CONFIG)
+            CASE_STR(EGL_BAD_CURRENT_SURFACE)
+            CASE_STR(EGL_BAD_DISPLAY)
+            CASE_STR(EGL_BAD_SURFACE)
+            CASE_STR(EGL_BAD_MATCH)
+            CASE_STR(EGL_BAD_PARAMETER)
+            CASE_STR(EGL_BAD_NATIVE_PIXMAP)
+            CASE_STR(EGL_BAD_NATIVE_WINDOW)
+            CASE_STR(EGL_CONTEXT_LOST)
+        default:
+            return "Unknown";
         }
     }
-    #undef CASE_STR
+#undef CASE_STR
 
-
-    static string ShaderInfoLog(GLuint handle)
+    static inline string ShaderInfoLog(GLuint handle)
     {
-        ASSERT(glIsShader(handle));
 
         string log;
-        GLint length;
 
-        glGetShaderiv(handle, GL_INFO_LOG_LENGTH, &length);
+        if (glIsShader(handle) == true) {
+            GLint length;
 
-        if (length > 1) {
-            log.resize(length);
-            glGetShaderInfoLog(handle, length, NULL, &log[0]);
+            glGetShaderiv(handle, GL_INFO_LOG_LENGTH, &length);
+
+            if (length > 1) {
+                log.resize(length);
+                glGetShaderInfoLog(handle, length, NULL, &log[0]);
+            }
+        } else {
+            log = ("Handle is a invalid shader handle");
         }
 
         return log;
     }
 
-    static string ProgramInfoLog(GLuint handle)
+    static inline string ProgramInfoLog(GLuint handle)
     {
-        ASSERT(glIsProgram(handle));
-
         string log;
-        GLint length(0);
+        if (glIsProgram(handle)) {
+            GLint length(0);
 
-        glGetProgramiv(handle, GL_INFO_LOG_LENGTH, &length);
+            glGetProgramiv(handle, GL_INFO_LOG_LENGTH, &length);
 
-        if (length > 1) {
-            log.resize(length);
-            glGetProgramInfoLog(handle, length, NULL, &log[0]);
+            if (length > 1) {
+                log.resize(length);
+                glGetProgramInfoLog(handle, length, NULL, &log[0]);
+            }
+        } else {
+            log = ("Handle is a invalid program handle");
         }
 
         return log;
     }
 
-    static GLuint CompileShader(GLenum type, const char* code)
+    static inline GLuint CompileShader(GLenum type, const char* code)
     {
         GLint status(GL_FALSE);
         GLuint handle = glCreateShader(type);
@@ -94,45 +99,36 @@ namespace EGL {
 
         if (status == GL_FALSE) {
             TRACE_GLOBAL(Trace::Error, ("Shader %d compilation failed: %s", handle, ShaderInfoLog(handle).c_str()));
-
             glDeleteShader(handle);
-            handle = 0;
+            handle = GL_FALSE;
         }
 
         return handle;
     }
 
-    static GLuint CreateProgram(const ShaderSourceList& sources)
+    static inline GLuint CreateProgram(const string& vertexShaderSource, const string& fragmentShaderSource)
     {
-        GLuint handle(0);
+        GLuint handle(GL_FALSE);
 
-        std::vector<GLuint> ids;
+        GLuint vs = CompileShader(GL_VERTEX_SHADER, vertexShaderSource.c_str());
+        GLuint fs = CompileShader(GL_FRAGMENT_SHADER, fragmentShaderSource.c_str());
 
-        for (auto shader : sources) {
-            TRACE_GLOBAL(Trace::Information, ("Compiling shader type 0x%04X", shader.first));
-
-            GLuint id = CompileShader(shader.first, shader.second);
-
-            if (id > 0) {
-                ids.push_back(id);
-            };
-        }
-
-        if (ids.size() == sources.size()) {
+        if ((vs != GL_FALSE) && (fs != GL_FALSE)) {
             handle = glCreateProgram();
 
-            for (auto id : ids) {
-                glAttachShader(handle, id);
-            }
+            glAttachShader(handle, vs);
+            glAttachShader(handle, fs);
         } else {
-            TRACE_GLOBAL(Trace::Error, ("Not all shaders were compiled correctly."));
+            TRACE_GLOBAL(Trace::Error, ("Error Creating Program"));
         }
 
         return handle;
     }
 
-    static GLint LinkProgram(GLuint handle)
+    static inline GLint LinkProgram(GLuint handle)
     {
+        ASSERT(glIsProgram(handle));
+
         GLint status(GL_FALSE);
 
         glLinkProgram(handle);
@@ -146,7 +142,29 @@ namespace EGL {
         return status;
     }
 
-    static string ConfigInfoLog(EGLDisplay dpy, EGLConfig config)
+    static inline void DeleteProgram(GLuint handle)
+    {
+        ASSERT(glIsProgram(handle));
+
+        GLint numShaders = 0;
+        glGetProgramiv(handle, GL_ATTACHED_SHADERS, &numShaders);
+
+        GLuint* shaderNames = new GLuint[numShaders];
+        glGetAttachedShaders(handle, numShaders, NULL, shaderNames);
+
+        for (int i = 0; i < numShaders; ++i) {
+            glDetachShader(handle, shaderNames[i]);
+            glDeleteShader(shaderNames[i]);
+        }
+
+        glGetProgramiv(handle, GL_ATTACHED_SHADERS, &numShaders);
+
+        TRACE_GLOBAL(Trace::EGL, ("Shaders Destroyed: %s", (numShaders == 0) ? "OK" : "FAILED"));
+
+        glDeleteProgram(handle);
+    }
+
+    static inline string ConfigInfoLog(EGLDisplay dpy, EGLConfig config)
     {
         std::stringstream stream;
 
@@ -161,12 +179,12 @@ namespace EGL {
         eglGetConfigAttrib(dpy, config, EGL_DEPTH_SIZE, &depthSize);
         eglGetConfigAttrib(dpy, config, EGL_STENCIL_SIZE, &stencilSize);
 
-        stream << "id=" << id << " buffer=" << bufferSize << " red=" << redSize << " green=" << greenSize << " blue=" << blueSize << " alpha=" << alphaSize << " depth=" << depthSize << " stencil=" << stencilSize;
+        stream << "id=" << id << "  -- buffer=" << bufferSize << "  -- red=" << redSize << "  -- green=" << greenSize << "  -- blue=" << blueSize << "  -- alpha=" << alphaSize << "  -- depth=" << depthSize << "  -- stencil=" << stencilSize;
 
         return stream.str();
     }
 
-    static std::vector<EGLConfig> MatchConfigs(EGLDisplay dpy, const EGLint attrib_list[])
+    static inline std::vector<EGLConfig> MatchConfigs(EGLDisplay dpy, const EGLint attrib_list[])
     {
         EGLint count(0);
 
@@ -199,5 +217,33 @@ namespace EGL {
         return configs;
     }
 
+    static inline string OpenGLInfo()
+    {
+        std::stringstream stream;
+
+        stream << std::endl
+               << "OpenGL information:" << std::endl
+               << "  -- version: " << glGetString(GL_VERSION) << std::endl
+               << "  -- shading language version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl
+               << "  -- vendor: " << glGetString(GL_VENDOR) << std::endl
+               << "  -- renderer: " << glGetString(GL_RENDERER) << std::endl
+               << "  -- extensions: " << glGetString(GL_EXTENSIONS) << std::endl;
+
+        return stream.str();
+    }
+
+    static inline string EGLInfo(EGLDisplay dpy)
+    {
+        std::stringstream stream;
+
+        stream << std::endl
+               << "EGL information:" << std::endl
+               << "  -- version: " << eglQueryString(dpy, EGL_VERSION) << std::endl
+               << "  -- vendor: " << eglQueryString(dpy, EGL_VENDOR) << std::endl
+               << "  -- client extensions: " << eglQueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS) << std::endl
+               << "  -- display extensions: " << eglQueryString(dpy, EGL_EXTENSIONS) << std::endl;
+
+        return stream.str();
+    }
 } // namespace EGL
 } // namespace WPEFramework

@@ -1,10 +1,10 @@
 #include "Module.h"
 
 #include "EGLToolbox.h"
-#include "IRender.h"
-#include "Tracing.h"
 
-#include <compositor/Client.h>
+#include "IModel.h"
+
+#include "Tracing.h"
 
 #ifndef GL_ES_VERSION_2_0
 #include <GLES2/gl2.h>
@@ -12,34 +12,10 @@
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <GLES2/gl2ext.h>
-
 #include <esUtil.h>
 
 namespace WPEFramework {
 namespace Graphics {
-    static constexpr EGLint RedBufferSize = 8;
-    static constexpr EGLint GreenBufferSize = 8;
-    static constexpr EGLint BlueBufferSize = 8;
-    static constexpr EGLint AlphaBufferSize = 8;
-    static constexpr EGLint DepthBufferSize = 0;
-
-    constexpr EGLint context_attribs[] = {
-        EGL_CONTEXT_CLIENT_VERSION, 2,
-        EGL_NONE
-    };
-
-    constexpr EGLint config_attribs[] = {
-        EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-        EGL_RED_SIZE, RedBufferSize,
-        EGL_GREEN_SIZE, GreenBufferSize,
-        EGL_BLUE_SIZE, BlueBufferSize,
-        EGL_ALPHA_SIZE, AlphaBufferSize,
-        EGL_BUFFER_SIZE, RedBufferSize + GreenBufferSize + BlueBufferSize + AlphaBufferSize,
-        /* EGL_DEPTH_SIZE, (majorVersion == 2) ? 16 : 0, */
-        EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-        EGL_SAMPLES, 0,
-        EGL_NONE
-    };
 
     constexpr GLfloat vVertices[] = {
         // front
@@ -172,18 +148,13 @@ namespace Graphics {
                                               "    gl_FragColor = vVaryingColor;  \n"
                                               "}                                  \n";
 
-    class EGLCube : public IRender {
+    class EGLCube : public IModel {
     public:
         EGLCube(const EGLCube&) = delete;
         EGLCube& operator=(const EGLCube&) = delete;
 
         EGLCube()
-            : _display(nullptr)
-            , _surface(nullptr)
-            , _eglSurface(EGL_NO_SURFACE)
-            , _eglContext(EGL_NO_CONTEXT)
-            , _eglDisplay(EGL_NO_DISPLAY)
-            , _aspect(0)
+            : _background(rand())
             , _program(GL_FALSE)
             , _modelviewmatrix(0)
             , _modelviewprojectionmatrix(0)
@@ -192,105 +163,23 @@ namespace Graphics {
             , _positionsoffset(0)
             , _colorsoffset(sizeof(vVertices))
             , _normalsoffset(sizeof(vVertices) + sizeof(vColors))
+            , _width(0)
+            , _height(0)
         {
         }
 
         virtual ~EGLCube()
         {
-            eglMakeCurrent(_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-
-            eglDestroyContext(_eglDisplay, _eglContext);
-            _eglContext = EGL_NO_CONTEXT;
-
-            eglDestroySurface(_eglDisplay, _eglSurface);
-            _eglSurface = EGL_NO_SURFACE;
-
-            if (_surface != nullptr) {
-                _surface->Release();
-            }
-
-            if (_display != nullptr) {
-                _display->Release();
+            if (_program != EGL_FALSE) {
+                glDeleteProgram(_program);
             }
         }
 
-        uint32_t Frames() const override
+        bool Construct()
         {
-            return _frameCount;
-        }
-
-        bool Setup(const string& tname, const uint32_t width, const uint32_t height) override
-        {
-            EGLint majorVersion(0);
-            EGLint minorVersion(0);
             EGLint eglResult(0);
-            EGLint numConfigs(0);
 
-            std::stringstream strm;
-            strm << tname << "-" << time(NULL);
-
-            string name(strm.str());
-
-            // Init CompositorClient
-            TRACE(Trace::Information, ("Setup %s width=%d height=%d", name.c_str(), width, height))
-
-            _display = Compositor::IDisplay::Instance(name);
-            ASSERT(_display != nullptr);
-
-            _surface = _display->Create(name, width, height);
-            ASSERT(_surface != nullptr);
-
-            // Init EGL
-            _eglDisplay = eglGetDisplay(_display->Native());
-            ASSERT(_eglDisplay != EGL_NO_DISPLAY);
-
-            TRACE(Trace::Information, ("EGL Display %p", _eglDisplay));
-
-            eglResult = eglInitialize(_eglDisplay, &majorVersion, &minorVersion);
-            ASSERT(eglResult == EGL_TRUE);
-
-            TRACE(Trace::Information, ("Initialized EGL v%d.%d", majorVersion, minorVersion));
-
-            // eglResult = eglBindAPI(EGL_OPENGL_ES_API);
-            // ASSERT(eglResult == EGL_TRUE);
-
-            EGLConfig eglConfig;
-
-            eglResult = eglChooseConfig(_eglDisplay, config_attribs, &eglConfig, 1, &numConfigs);
-            ASSERT(eglResult == EGL_TRUE);
-
-            TRACE(Trace::Information, ("Choosen config: %s", EGL::ConfigInfoLog(_eglDisplay, eglConfig).c_str()));
-
-            // std::vector<EGLConfig> configs = EGL::MatchConfigs(_eglDisplay, );
-            // ASSERT(configs.size() != 0);
-
-            _eglContext = eglCreateContext(_eglDisplay, eglConfig, EGL_NO_CONTEXT, context_attribs);
-            ASSERT(_eglContext != EGL_NO_CONTEXT);
-
-            _eglSurface = eglCreateWindowSurface(_eglDisplay, eglConfig, _surface->Native(), nullptr);
-
-            EGLint s_width, s_heigth;
-
-            eglQuerySurface(_eglDisplay, _eglSurface, EGL_WIDTH, &s_width);
-            eglQuerySurface(_eglDisplay, _eglSurface, EGL_HEIGHT, &s_heigth);
-
-            TRACE(Trace::Information, ("EGL surface dimension: %dx%d", s_width, s_heigth));
-
-            // eglResult = eglSwapInterval(_eglDisplay, EGL_TRUE); // enable vsync
-            // ASSERT(eglResult == EGL_TRUE);
-
-            if (eglMakeCurrent(_eglDisplay, _eglSurface, _eglSurface, _eglContext) != EGL_TRUE) {
-                TRACE(Trace::Error, ("Unable to make EGL context current 0x%x", eglGetError()));
-                return false;
-            }
-
-            // Init Cube
-            EGL::ShaderSourceList shaders = {
-                { GL_VERTEX_SHADER, vertex_shader_source },
-                { GL_FRAGMENT_SHADER, fragment_shader_source }
-            };
-
-            _program = EGL::CreateProgram(shaders);
+            _program = EGL::CreateProgram(vertex_shader_source, fragment_shader_source);
             ASSERT(_program != GL_FALSE);
 
             glBindAttribLocation(_program, 0, "in_position");
@@ -300,14 +189,12 @@ namespace Graphics {
             eglResult = EGL::LinkProgram(_program);
 
             if (eglResult == GL_TRUE) {
+
                 glUseProgram(_program);
 
                 _modelviewmatrix = glGetUniformLocation(_program, "modelviewMatrix");
                 _modelviewprojectionmatrix = glGetUniformLocation(_program, "modelviewprojectionMatrix");
                 _normalmatrix = glGetUniformLocation(_program, "normalMatrix");
-
-                glViewport(0, 0, width, height);
-                glEnable(GL_CULL_FACE);
 
                 glGenBuffers(1, &_vbo);
                 glBindBuffer(GL_ARRAY_BUFFER, _vbo);
@@ -326,35 +213,57 @@ namespace Graphics {
                 glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)(intptr_t)_colorsoffset);
                 glEnableVertexAttribArray(2);
 
-                // /* clear the color buffer */
-                // glClearColor(0.5, 0.5, 0.5, 1.0);
-                // glClear(GL_COLOR_BUFFER_BIT);
-
                 TRACE(Trace::Information, (_T("Setup done.")));
             } else {
                 TRACE(Trace::Error, (_T("Failed to link program.")));
+                glDeleteProgram(_program);
             }
 
             return (eglResult == GL_TRUE);
         }
 
-        void Draw()
+        void Process() override
         {
-            ESMatrix modelview;
+            static uint32_t frameNumber;
+            int r, g, b;
+
+            r = (((_background & 0x00ff0000) >> 16) + frameNumber) % 512;
+            g = (((_background & 0x0000ff00) >> 8) + frameNumber) % 512;
+            b = ((_background & 0x000000ff) + frameNumber) % 512;
+
+            if (r >= 256)
+                r = 511 - r;
+            if (g >= 256)
+                g = 511 - g;
+            if (b >= 256)
+                b = 511 - b;
+
+            glViewport(0, 0, _width, _height);
+            glEnable(GL_CULL_FACE);
+
+            /*
+             * Different color every frame
+             */
+            glClearColor(r / 256.0, g / 256.0, b / 256.0, 1.0);
+            glClear(GL_COLOR_BUFFER_BIT);
 
             /* clear the color buffer */
-            glClearColor(0.5, 0.5, 0.5, 1.0);
-            glClear(GL_COLOR_BUFFER_BIT);
+            // glClearColor(0.5, 0.5, 0.5, 1.0);
+            // glClear(GL_COLOR_BUFFER_BIT);
+
+            ESMatrix modelview;
 
             esMatrixLoadIdentity(&modelview);
             esTranslate(&modelview, 0.0f, 0.0f, -8.0f);
-            esRotate(&modelview, 45.0f + (0.25f * _frameCount), 1.0f, 0.0f, 0.0f);
-            esRotate(&modelview, 45.0f - (0.5f * _frameCount), 0.0f, 1.0f, 0.0f);
-            esRotate(&modelview, 10.0f + (0.15f * _frameCount), 0.0f, 0.0f, 1.0f);
+            esRotate(&modelview, 45.0f + (0.25f * frameNumber), 1.0f, 0.0f, 0.0f);
+            esRotate(&modelview, 45.0f - (0.5f * frameNumber), 0.0f, 1.0f, 0.0f);
+            esRotate(&modelview, 10.0f + (0.15f * frameNumber), 0.0f, 0.0f, 1.0f);
+
+            GLfloat aspect = (GLfloat)(_height) / (GLfloat)(_width);
 
             ESMatrix projection;
             esMatrixLoadIdentity(&projection);
-            esFrustum(&projection, -2.8f, +2.8f, -2.8f * _aspect, +2.8f * _aspect, 6.0f, 10.0f);
+            esFrustum(&projection, -2.8f, +2.8f, -2.8f * aspect, +2.8f * aspect, 6.0f, 10.0f);
 
             ESMatrix modelviewprojection;
             esMatrixLoadIdentity(&modelviewprojection);
@@ -381,38 +290,33 @@ namespace Graphics {
             glDrawArrays(GL_TRIANGLE_STRIP, 12, 4);
             glDrawArrays(GL_TRIANGLE_STRIP, 16, 4);
             glDrawArrays(GL_TRIANGLE_STRIP, 20, 4);
+
+            glDisable(GL_CULL_FACE);
+
+            ++frameNumber;
         }
 
-        void Present() override
+        void Position(const DimensionType& dimension) override
         {
-            ASSERT(_eglDisplay != EGL_NO_DISPLAY);
-            ASSERT(_eglSurface != EGL_NO_SURFACE);
-            ASSERT(_eglContext != EGL_NO_CONTEXT);
+        }
 
-            // Make the context current
-            if (eglMakeCurrent(_eglDisplay, _eglSurface, _eglSurface, _eglContext) == EGL_TRUE) {
-                Draw();
+        void Size(const SizeType& surfaceSize) override
+        {
+            _height = surfaceSize.Height;
+            _width = surfaceSize.Width;
+        }
 
-                if (eglSwapBuffers(_eglDisplay, _eglSurface) == TRUE) {
-                    ++_frameCount;
-                } else {
-                    TRACE(Trace::Error, ("eglSwapBuffers failed error=%s", EGL::ErrorString(eglGetError())));
-                }
+        void Opacity(const uint8_t opacity) override
+        {
+        }
 
-            } else {
-                TRACE(Trace::Error, ("Unable to make EGL context current error=%s", EGL::ErrorString(eglGetError())));
-            }
+        bool IsValid() const override
+        {
+            return (_program != GL_FALSE);
         }
 
     private:
-        Compositor::IDisplay* _display;
-        Compositor::IDisplay::ISurface* _surface;
-
-        EGLSurface _eglSurface;
-        EGLContext _eglContext;
-        EGLDisplay _eglDisplay;
-
-        GLfloat _aspect;
+        GLuint _background;
         GLuint _program;
         GLint _modelviewmatrix;
         GLint _modelviewprojectionmatrix;
@@ -421,14 +325,15 @@ namespace Graphics {
         GLuint _positionsoffset;
         GLuint _colorsoffset;
         GLuint _normalsoffset;
-
-        uint32_t _frameCount;
+        GLuint _width;
+        GLuint _height;
     }; // class EGLCube
 
-    IRender* IRender::Instance()
+    Core::ProxyType<IModel> IModel::Create(const ModelConfig& config)
     {
-        static EGLCube _instance;
-        return &_instance;
+        Core::ProxyType<EGLCube> proxy = Core::ProxyType<EGLCube>::Create(config);
+
+        return Core::ProxyType<IModel>(proxy);
     }
 } // namespace Graphics
 } // namespace WPEFramework
