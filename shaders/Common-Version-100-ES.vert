@@ -1,7 +1,6 @@
 #version 100
 
 attribute vec3  vPosition;
-// attribute float vOpacity;
 
 void main()                                
 {
