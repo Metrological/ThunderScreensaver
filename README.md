@@ -1,6 +1,6 @@
 # ThunderCube
 
-Cube is a Thunder plugin that renders a simpel EGL cube using the [compositorclient](https://github.com/rdkcentral/ThunderClientLibraries/tree/master/Source/compositorclient).
+Screensaver is a Thunder plugin that renders a simpel EGL cube using the [compositorclient](https://github.com/rdkcentral/ThunderClientLibraries/tree/master/Source/compositorclient).
 
 ## Build
 
@@ -13,33 +13,33 @@ Options:
 ## JSONRPC API
 ### Pause Rendering
 ``` shell
-curl --location --request POST 'http://<Thunder IP>/jsonrpc/Cube' \
+curl --location --request POST 'http://<Thunder IP>/jsonrpc/Screensaver' \
     --header 'Content-Type: application/json' \
     --data-raw '{
         "jsonrpc": "2.0",
         "id": 42,
-        "method": "Cube.1.pause",
+        "method": "Screensaver.1.pause",
     }'
 ```
 
 ### Resume Rendering
 ``` shell
-curl --location --request POST 'http://<Thunder IP>/jsonrpc/Cube' \
+curl --location --request POST 'http://<Thunder IP>/jsonrpc/Screensaver' \
     --header 'Content-Type: application/json' \
     --data-raw '{
         "jsonrpc": "2.0",
         "id": 42,
-        "method": "Cube.1.resume",
+        "method": "Screensaver.1.resume",
     }'
 ```
 
 ## REST API
 ### Pause Rendering
 ``` shell
-curl --request PUT 'http://<Thunder IP>/Cube/Resume'
+curl --request PUT 'http://<Thunder IP>/Screensaver/Resume'
 ```
 
 ### Resume Rendering
 ``` shell
-curl --request PUT 'http://<Thunder IP>/Cube/Pause'
+curl --request PUT 'http://<Thunder IP>/Screensaver/Pause'
 ```
