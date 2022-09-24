@@ -1,0 +1,29 @@
+autostart = '@PLUGIN_SCREENSAVER_AUTOSTART@'
+precondition = ["Graphics"]
+
+configuration = JSON()
+
+configuration.add("timeout", '@PLUGIN_SCREENSAVER_TIMEOUT@')
+configuration.add("fadein", '@PLUGIN_SCREENSAVER_FADEIN@')
+configuration.add("instant", '@PLUGIN_SCREENSAVER_INSTANT@')
+
+shader_files = [
+    {
+        "vertexfile": "Common-Version-100-ES.vert",
+        "fragmentfile": "Tentacles-of-Balance.frag"
+    },
+    {
+        "vertexfile": "Common-Version-100-ES.vert",
+        "fragmentfile": "Tentacles-of-Light.frag"
+    },
+    {
+        "vertexfile": "Common-Version-100-ES.vert",
+        "fragmentfile": "Universe-of-Squares.frag"
+    },
+    {
+        "vertexfile": "Common-Version-100-ES.vert",
+        "fragmentfile": "Rotating-Cube.frag"
+    }
+]
+
+configuration.add("models", shader_files)
