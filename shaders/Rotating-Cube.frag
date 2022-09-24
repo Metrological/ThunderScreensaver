@@ -1,8 +1,14 @@
-precision mediump float;                                                                        
-                                                                                                
+
+#version 300 es
+
+precision mediump float;
+                                                                     
 uniform vec3      u_resolution;           // viewport resolution (in pixels                     
 uniform float     u_opacity;                                                                    
 uniform float     u_time;    
+
+// output
+out vec4 outColor; 
 
 //Source https://www.shadertoy.com/view/lddcR8
 
@@ -209,8 +215,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	}
 }
 
-
 void main()                                                                                     
 {                                                                                               
-    mainImage(gl_FragColor, gl_FragCoord.xy);                                                   
+    mainImage(outColor, gl_FragCoord.xy);                                                   
 }   
