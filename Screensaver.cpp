@@ -39,6 +39,18 @@ namespace Plugin {
     /* static */ Core::CriticalSection Screensaver::InputServer::_adminLock;
     /* static */ Screensaver::InputServer::ICallback* Screensaver::InputServer::_callback = nullptr;
 
+
+    static uint32_t getRandomValue(const uint32_t max)
+    {
+        static bool once = false;
+        if (!once) {
+            srand(Core::Time::Now().Ticks());
+            once = true;
+        }
+
+        return rand() % max;
+    }
+
     constexpr char connectorNameVirtualInput[] = "/tmp/keyhandler";
     constexpr char clientNameVirtualInput[] = "Screensaver";
 
@@ -74,6 +86,7 @@ namespace Plugin {
         , _ticker(Core::ProxyType<Tick>::Create(*this))
         , _inputServer(connectorNameVirtualInput)
     {
+        getRandomValue(0);
     }
 
     /* virtual */ Screensaver::~Screensaver()
@@ -112,7 +125,7 @@ namespace Plugin {
         if (config.Models.Length() > 0) {
             _eglRender.Initialize(service->Callsign(), config.Width.Value(), config.Height.Value(), config.FPS.Value());
 
-            uint16_t index = rand() % config.Models.Length();
+            uint16_t index = getRandomValue(config.Models.Length()); // pick one
 
             TRACE(Trace::Information, ("Found %d model%s picking number %d", config.Models.Length(), (config.Models.Length() > 1) ? "s" : "", index));
 
@@ -164,7 +177,7 @@ namespace Plugin {
 
         Core::IWorkerPool::Instance().Revoke(
             Core::ProxyType<Core::IDispatch>(_ticker),
-            Core::infinite);   
+            Core::infinite);
 
         JSONRPCUnregister();
 
