@@ -33,6 +33,7 @@ namespace Plugin {
     private:
         class InputServer {
         public:
+            InputServer() = delete;
             InputServer(const InputServer&) = delete;
             InputServer& operator=(const InputServer&) = delete;
 
@@ -41,13 +42,8 @@ namespace Plugin {
                 virtual void Trigger() = 0;
             }; // struct ICallback
 
-            static InputServer& Instance()
-            {
-                static InputServer server;
-                return server;
-            }
-
-            ~InputServer() = default;
+            InputServer(const string& connector);
+            ~InputServer();
 
             static void VirtualKeyboardCallback(keyactiontype type VARIABLE_IS_NOT_USED, unsigned int code VARIABLE_IS_NOT_USED)
             {
@@ -81,8 +77,6 @@ namespace Plugin {
             }
 
         private:
-            InputServer();
-
         private:
             static Core::CriticalSection _adminLock;
             static ICallback* _callback;
@@ -272,6 +266,8 @@ namespace Plugin {
 
         InputSink _inputSink;
         Core::ProxyType<Tick> _ticker;
+
+        InputServer _inputServer;
     };
 } // namespace Plugin
 } // namespace WPEFramework

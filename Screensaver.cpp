@@ -42,13 +42,21 @@ namespace Plugin {
     constexpr char connectorNameVirtualInput[] = "/tmp/keyhandler";
     constexpr char clientNameVirtualInput[] = "Screensaver";
 
-    Screensaver::InputServer::InputServer()
+    Screensaver::InputServer::InputServer(const string& connector)
         : _virtualinput(nullptr)
     {
-        _virtualinput = virtualinput_open(clientNameVirtualInput, connectorNameVirtualInput, VirtualKeyboardCallback, VirtualMouseCallback, VirtualTouchScreenCallback);
+        _virtualinput = virtualinput_open(clientNameVirtualInput, connector.c_str(), VirtualKeyboardCallback, VirtualMouseCallback, VirtualTouchScreenCallback);
 
         if (_virtualinput == nullptr) {
             TRACE(Trace::Error, ("Initialization of virtualinput failed!"));
+        }
+    }
+
+    Screensaver::InputServer::~InputServer()
+    {
+        if (_virtualinput != nullptr) {
+            virtualinput_close(_virtualinput);
+            _virtualinput = nullptr;
         }
     }
 
@@ -63,13 +71,12 @@ namespace Plugin {
         , _startTime(0)
         , _inputSink(*this)
         , _ticker(Core::ProxyType<Tick>::Create(*this))
+        , _inputServer(connectorNameVirtualInput)
     {
-        InputServer::Instance().Callback(&_inputSink);
     }
 
     /* virtual */ Screensaver::~Screensaver()
     {
-        InputServer::Instance().Callback(nullptr);
     }
 
     /* virtual */ const string Screensaver::Initialize(PluginHost::IShell* service)
@@ -89,15 +96,17 @@ namespace Plugin {
         _timeOut = config.TimeOut.Value();
         _startTime = Core::Time::Now().Add(_timeOut * 1000).Ticks();
 
+        _inputServer.Callback(&_inputSink);
+
         Core::IWorkerPool::Instance().Schedule(
-                Core::Time::Now().Add(_interval), 
-                Core::ProxyType<Core::IDispatch>(_ticker));
+            Core::Time::Now().Add(_interval),
+            Core::ProxyType<Core::IDispatch>(_ticker));
 
         JSONRPCRegister();
 
         if (config.Models.Length() > 0) {
             _eglRender.Initialize(service->Callsign(), config.Width.Value(), config.Height.Value(), config.FPS.Value());
-            
+
             uint16_t index = rand() % config.Models.Length();
 
             TRACE(Trace::Information, ("Found %d model%s picking number %d", config.Models.Length(), (config.Models.Length() > 1) ? "s" : "", index));
@@ -130,7 +139,7 @@ namespace Plugin {
 
             if (config.Instant.Value() == true) {
                 _eglRender.Show();
-            }            
+            }
         } else {
             message = "No render models found.";
         }
@@ -146,9 +155,11 @@ namespace Plugin {
     {
         _eglRender.Hide();
 
+        _inputServer.Callback(nullptr);
+
         Core::IWorkerPool::Instance().Revoke(
-            Core::ProxyType<Core::IDispatch>(_ticker), 
-            Core::infinite);
+            Core::ProxyType<Core::IDispatch>(_ticker),
+            Core::infinite);   
 
         JSONRPCUnregister();
 
