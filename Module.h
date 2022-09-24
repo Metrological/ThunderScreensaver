@@ -20,7 +20,7 @@
 #pragma once
 
 #ifndef MODULE_NAME
-#define MODULE_NAME Plugin_Cube
+#define MODULE_NAME Plugin_Screensaver
 #endif
 
 #include <plugins/plugins.h>
