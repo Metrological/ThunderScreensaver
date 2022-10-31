@@ -51,6 +51,7 @@ namespace Graphics {
         , _framesRendered(0)
         , _models()
         , _suspend(false)
+        , _active(false)
     {
     }
 
@@ -309,7 +310,8 @@ namespace Graphics {
     void EGLRender::Present()
     {
         if (eglSwapBuffers(_eglDisplay, _eglSurface) == GL_TRUE) {
-            ++_framesRendered;
+            ++_framesRendered; 
+            _display->Process(_framesRendered);
         } else {
             TRACE(Trace::Error, ("eglSwapBuffers failed error=%s", EGL::ErrorString(eglGetError())));
         }
