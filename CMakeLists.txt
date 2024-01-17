@@ -37,7 +37,8 @@ add_subdirectory(esTransorm)
 
 add_subdirectory(simpleworker)
 
-set(PLUGIN_SCREENSAVER_AUTOSTART true CACHE STRING "Automatically start this plugin")
+set(PLUGIN_SCREENSAVER_AUTOSTART false CACHE STRING "Automatically start this plugin")
+set(PLUGIN_SCREENSAVER_STARTMODE "deactivated" CACHE STRING "Automatically start plugin")
 
 set(PLUGIN_SCREENSAVER_TIMEOUT 30 CACHE STRING "Timeout in seconds of inactivaty to start the show the screensaver")
 set(PLUGIN_SCREENSAVER_FADEIN 1000 CACHE STRING "Fade in time in milliseconds")
