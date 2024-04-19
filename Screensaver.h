@@ -33,7 +33,6 @@ namespace Plugin {
     private:
         class InputServer {
         public:
-            InputServer() = delete;
             InputServer(const InputServer&) = delete;
             InputServer& operator=(const InputServer&) = delete;
 
@@ -42,7 +41,7 @@ namespace Plugin {
                 virtual void Trigger() = 0;
             }; // struct ICallback
 
-            InputServer(const string& connector);
+            InputServer();
             ~InputServer();
 
             static void VirtualKeyboardCallback(keyactiontype type VARIABLE_IS_NOT_USED, unsigned int code VARIABLE_IS_NOT_USED)
@@ -76,6 +75,8 @@ namespace Plugin {
                 _callback = callback;
             }
 
+            void Connect(const string& connector);
+            void Disconnect();
         private:
         private:
             static Core::CriticalSection _adminLock;
@@ -126,20 +127,32 @@ namespace Plugin {
         public:
             Tick(Screensaver& parent)
                 : _parent(parent)
+                , _interval(0)
             {
                 TRACE(Trace::Information, ("Created Tick %p", this));
+            }
+
+            void Schedule(const uint16_t interval)
+            {
+                _interval = interval;
+                Core::IWorkerPool::Instance()
+                    .Schedule(
+                        Core::Time::Now().Add(_interval),
+                        Core::ProxyType<Core::IDispatch>(*this));
             }
 
             void Dispatch() override
             {
                 _parent.Tack();
-                Core::IWorkerPool::Instance().Schedule(
-                    Core::Time::Now().Add(_parent._interval),
-                    Core::ProxyType<Core::IDispatch>(*this));
+
+                if (_parent.IsActive()) {
+                    Schedule(_interval);
+                }
             }
 
         private:
             Screensaver& _parent;
+            uint16_t _interval;
         };
 
     public:
@@ -217,6 +230,7 @@ namespace Plugin {
         inline uint32_t Resume()
         {
             _eglRender.Resume();
+            _ticker->Schedule(_interval);
             return Core::ERROR_NONE;
         }
 
@@ -229,6 +243,7 @@ namespace Plugin {
         inline uint32_t Show()
         {
             _eglRender.Show();
+            _ticker->Schedule(_interval);
             return Core::ERROR_NONE;
         }
 
@@ -256,6 +271,11 @@ namespace Plugin {
             }
 
             return _triggered;
+        }
+
+        bool IsActive() const
+        {
+            return _eglRender.IsActive();
         }
 
     private:

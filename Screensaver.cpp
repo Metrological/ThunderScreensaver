@@ -39,7 +39,6 @@ namespace Plugin {
     /* static */ Core::CriticalSection Screensaver::InputServer::_adminLock;
     /* static */ Screensaver::InputServer::ICallback* Screensaver::InputServer::_callback = nullptr;
 
-
     static uint32_t getRandomValue(const uint32_t max)
     {
         static bool once = false;
@@ -54,8 +53,16 @@ namespace Plugin {
     constexpr char connectorNameVirtualInput[] = "/tmp/keyhandler";
     constexpr char clientNameVirtualInput[] = "Screensaver";
 
-    Screensaver::InputServer::InputServer(const string& connector)
+    Screensaver::InputServer::InputServer()
         : _virtualinput(nullptr)
+    {
+    }
+
+    Screensaver::InputServer::~InputServer()
+    {
+    }
+
+    void Screensaver::InputServer::Connect(const string& connector)
     {
         _virtualinput = virtualinput_open(clientNameVirtualInput, connector.c_str(), VirtualKeyboardCallback, VirtualMouseCallback, VirtualTouchScreenCallback);
 
@@ -64,7 +71,7 @@ namespace Plugin {
         }
     }
 
-    Screensaver::InputServer::~InputServer()
+    void Screensaver::InputServer::Disconnect()
     {
         if (_virtualinput != nullptr) {
             virtualinput_close(_virtualinput);
@@ -84,9 +91,8 @@ namespace Plugin {
         , _reportFPS(false)
         , _inputSink(*this)
         , _ticker(Core::ProxyType<Tick>::Create(*this))
-        , _inputServer(connectorNameVirtualInput)
+        , _inputServer()
     {
-        getRandomValue(0);
     }
 
     /* virtual */ Screensaver::~Screensaver()
@@ -115,49 +121,51 @@ namespace Plugin {
         _reportFPS = config.ReportFPS.Value();
 
         _inputServer.Callback(&_inputSink);
-
-        Core::IWorkerPool::Instance().Schedule(
-            Core::Time::Now().Add(_interval),
-            Core::ProxyType<Core::IDispatch>(_ticker));
+        _inputServer.Connect(connectorNameVirtualInput);
 
         JSONRPCRegister();
 
         if (config.Models.Length() > 0) {
-            _eglRender.Initialize(service->Callsign(), config.Width.Value(), config.Height.Value(), config.FPS.Value());
+            if (_eglRender.Initialize(service->Callsign(), config.Width.Value(), config.Height.Value(), config.FPS.Value())) {
+                uint16_t index = getRandomValue(config.Models.Length()); // pick one
 
-            uint16_t index = getRandomValue(config.Models.Length()); // pick one
+                TRACE(Trace::Information, ("Found %d model%s picking number %d", config.Models.Length(), (config.Models.Length() > 1) ? "s" : "", index));
 
-            TRACE(Trace::Information, ("Found %d model%s picking number %d", config.Models.Length(), (config.Models.Length() > 1) ? "s" : "", index));
+                Graphics::ModelConfig current = config.Models[index];
 
-            Graphics::ModelConfig current = config.Models[index];
+                if ((config.Models[index].FragmentShaderFile.IsSet() == true) && (config.Models[index].FragmentShaderFile.Value()[0] != '/')) {
+                    current.FragmentShaderFile = service->DataPath() + "/shaders/" + config.Models[index].FragmentShaderFile.Value();
 
-            if ((config.Models[index].FragmentShaderFile.IsSet() == true) && (config.Models[index].FragmentShaderFile.Value()[0] != '/')) {
-                current.FragmentShaderFile = service->DataPath() + "/shaders/" + config.Models[index].FragmentShaderFile.Value();
+                    TRACE(Trace::Information, ("Fragment file %s", current.FragmentShaderFile.Value().c_str()));
+                }
 
-                TRACE(Trace::Information, ("Fragment file %s", current.FragmentShaderFile.Value().c_str()));
+                if ((config.Models[index].VertexShaderFile.IsSet() == true) && (config.Models[index].VertexShaderFile.Value()[0] != '/')) {
+                    current.VertexShaderFile = service->DataPath() + "/shaders/" + config.Models[index].VertexShaderFile.Value();
+
+                    TRACE(Trace::Information, ("Vertex file %s", current.VertexShaderFile.Value().c_str()));
+                }
+
+                if (current.Width.Value() == 0) {
+                    current.Width = config.Width.Value();
+                }
+
+                if (current.Height.Value() == 0) {
+                    current.Height = config.Height.Value();
+                }
+
+                uint32_t id = _eglRender.Add(current);
+
+                TRACE(Trace::Information, ("Added model id=%d", id));
+
+                if (config.Instant.Value() == true) {
+                    _eglRender.Show();
+                }
+
+                TRACE(Trace::Information, ("Screensaver::%s", __FUNCTION__));
+            } else {
+                message = "Failed to initialize render surface.";
             }
 
-            if ((config.Models[index].VertexShaderFile.IsSet() == true) && (config.Models[index].VertexShaderFile.Value()[0] != '/')) {
-                current.VertexShaderFile = service->DataPath() + "/shaders/" + config.Models[index].VertexShaderFile.Value();
-
-                TRACE(Trace::Information, ("Vertex file %s", current.VertexShaderFile.Value().c_str()));
-            }
-
-            if (current.Width.Value() == 0) {
-                current.Width = config.Width.Value();
-            }
-
-            if (current.Height.Value() == 0) {
-                current.Height = config.Height.Value();
-            }
-
-            uint32_t id = _eglRender.Add(current);
-
-            TRACE(Trace::Information, ("Added model id=%d", id));
-
-            if (config.Instant.Value() == true) {
-                _eglRender.Show();
-            }
         } else {
             message = "No render models found.";
         }
@@ -171,8 +179,9 @@ namespace Plugin {
 
     /* virtual */ void Screensaver::Deinitialize(PluginHost::IShell* service VARIABLE_IS_NOT_USED)
     {
-        _eglRender.Hide();
+        _eglRender.Deinitialize();
 
+        _inputServer.Disconnect();
         _inputServer.Callback(nullptr);
 
         Core::IWorkerPool::Instance().Revoke(
@@ -183,6 +192,8 @@ namespace Plugin {
 
         ASSERT(_service == service);
         _service = nullptr;
+
+        TRACE(Trace::Information, ("Screensaver::%s", __FUNCTION__));
     }
 
     /* virtual */ string Screensaver::Information() const
