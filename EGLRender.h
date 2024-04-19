@@ -37,7 +37,8 @@ namespace Graphics {
 
         virtual ~EGLRender();
 
-        void Initialize(const string& name, const uint32_t width, const uint32_t height, const uint16_t fps);
+        bool Initialize(const string& name, const uint32_t width, const uint32_t height, const uint16_t fps);
+        void Deinitialize();
 
         uint32_t Add(const ModelConfig config);
         void Remove(uint32_t id);
@@ -53,6 +54,11 @@ namespace Graphics {
         void Hide();
         void Pause();
         void Resume();
+
+        bool IsActive() const
+        {
+            return _active;
+        }
 
     private:
         typedef std::map<uint32_t, Core::ProxyType<IModel>> ModelMap;

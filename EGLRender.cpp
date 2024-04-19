@@ -57,31 +57,39 @@ namespace Graphics {
 
     EGLRender::~EGLRender()
     {
-        Hide();
+    }
 
+    void EGLRender::Deinitialize()
+    {
         Stop();
+
         Wait(WPEFramework::Core::Thread::STOPPED, WPEFramework::Core::infinite);
+
+        for (auto model : _models) {
+            (model.second)->Destroy();
+            (model.second).Release();
+        }
 
         DeinitEGL();
 
-        for (auto model : _models) {
-            model.second.Release();
-        }
-
         if (_surface != nullptr) {
-            _surface->Release();
+            uint32_t result = _surface->Release();
+            _surface = nullptr;
+            TRACE(Trace::Information, ("%s: Surface %s", __FUNCTION__, (result == Core::ERROR_DESTRUCTION_SUCCEEDED) ? "Destroyed" : "Released"));
         }
 
         if (_display != nullptr) {
-            _display->Release();
+            uint32_t result = _display->Release();
+            _display = nullptr;
+            TRACE(Trace::Information, ("%s: Display %s", __FUNCTION__, (result == Core::ERROR_DESTRUCTION_SUCCEEDED) ? "Destroyed" : "Released"));
         }
     }
 
-    void EGLRender::Initialize(const string& name, const uint32_t width, const uint32_t height, const uint16_t fps)
+    bool EGLRender::Initialize(const string& name, const uint32_t width, const uint32_t height, const uint16_t fps)
     {
         std::stringstream strm;
 
-        TRACE(Trace::Information, ("EGLRender::%s name=%s width=%d, heigth=%d fps=%d", __FUNCTION__, name.c_str(), width, height, fps));
+        TRACE(Trace::Information, ("EGLRender::%s name=%s width=%d, height=%d fps=%d", __FUNCTION__, name.c_str(), width, height, fps));
 
         _fps = fps;
 
@@ -93,7 +101,7 @@ namespace Graphics {
         _surface = _display->Create(strm.str(), width, height);
         ASSERT(_surface != nullptr);
 
-        InitEGL();
+        return InitEGL();
     }
 
     uint32_t EGLRender::Add(const ModelConfig config)
@@ -155,19 +163,26 @@ namespace Graphics {
         _eglContext = eglCreateContext(_eglDisplay, eglConfig, EGL_NO_CONTEXT, defaultContextAttribs);
         ASSERT(_eglContext != EGL_NO_CONTEXT);
 
-        _eglSurface = eglCreateWindowSurface(_eglDisplay, eglConfig, _surface->Native(), nullptr);
-        ASSERT(_eglSurface != EGL_NO_SURFACE);
+        EGLNativeWindowType nativeWindowType = _surface->Native();
 
-        EGLint width, heigth;
+        _eglSurface = eglCreateWindowSurface(_eglDisplay, eglConfig, nativeWindowType, nullptr);
+
+        if (!_eglSurface) {
+            TRACE(Trace::Error, ("Unable to create a EGL window surface error=%s", EGL::ErrorString(eglGetError())));
+        }
+
+        // ASSERT(_eglSurface != EGL_NO_SURFACE);
+
+        EGLint width, height;
         eglQuerySurface(_eglDisplay, _eglSurface, EGL_WIDTH, &width);
-        eglQuerySurface(_eglDisplay, _eglSurface, EGL_HEIGHT, &heigth);
+        eglQuerySurface(_eglDisplay, _eglSurface, EGL_HEIGHT, &height);
 
-        TRACE(Trace::Information, ("EGL surface dimension: %dx%d", width, heigth));
+        TRACE(Trace::Information, ("EGL surface dimension: %dx%d", width, height));
 
         if (eglMakeCurrent(_eglDisplay, _eglSurface, _eglSurface, _eglContext) == EGL_FALSE) {
             TRACE(Trace::Error, ("Unable to make EGL context current error=%s", EGL::ErrorString(eglGetError())));
         } else {
-            TRACE(Trace::Information, ("EGL Ready: %s %s",  EGL::EGLInfo(_eglDisplay).c_str(), EGL::OpenGLInfo().c_str()));
+            TRACE(Trace::Information, ("EGL Ready: %s %s", EGL::EGLInfo(_eglDisplay).c_str(), EGL::OpenGLInfo().c_str()));
             eglMakeCurrent(_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
         }
 
@@ -310,7 +325,7 @@ namespace Graphics {
     void EGLRender::Present()
     {
         if (eglSwapBuffers(_eglDisplay, _eglSurface) == GL_TRUE) {
-            ++_framesRendered; 
+            ++_framesRendered;
             _display->Process(_framesRendered);
         } else {
             TRACE(Trace::Error, ("eglSwapBuffers failed error=%s", EGL::ErrorString(eglGetError())));
@@ -321,7 +336,7 @@ namespace Graphics {
     {
         LockContext();
 
-        if (_suspend == false) {
+        if ((_suspend == false) && (_eglDisplay != EGL_NO_DISPLAY) && (_eglSurface != EGL_NO_SURFACE)) {
             for (auto model : _models) {
                 if (model.second->IsValid() == true) {
                     model.second->Process();
