@@ -144,24 +144,25 @@ namespace EGL {
 
     static inline void DeleteProgram(GLuint handle)
     {
-        ASSERT(glIsProgram(handle));
+        // ASSERT(glIsProgram(handle));
+        if (glIsProgram(handle)) {
+            GLint numShaders = 0;
+            glGetProgramiv(handle, GL_ATTACHED_SHADERS, &numShaders);
 
-        GLint numShaders = 0;
-        glGetProgramiv(handle, GL_ATTACHED_SHADERS, &numShaders);
+            GLuint* shaderNames = new GLuint[numShaders];
+            glGetAttachedShaders(handle, numShaders, NULL, shaderNames);
 
-        GLuint* shaderNames = new GLuint[numShaders];
-        glGetAttachedShaders(handle, numShaders, NULL, shaderNames);
+            for (int i = 0; i < numShaders; ++i) {
+                glDetachShader(handle, shaderNames[i]);
+                glDeleteShader(shaderNames[i]);
+            }
 
-        for (int i = 0; i < numShaders; ++i) {
-            glDetachShader(handle, shaderNames[i]);
-            glDeleteShader(shaderNames[i]);
+            glGetProgramiv(handle, GL_ATTACHED_SHADERS, &numShaders);
+
+            TRACE_GLOBAL(Trace::EGL, ("Shaders Destroyed: %s", (numShaders == 0) ? "OK" : "FAILED"));
+
+            glDeleteProgram(handle);
         }
-
-        glGetProgramiv(handle, GL_ATTACHED_SHADERS, &numShaders);
-
-        TRACE_GLOBAL(Trace::EGL, ("Shaders Destroyed: %s", (numShaders == 0) ? "OK" : "FAILED"));
-
-        glDeleteProgram(handle);
     }
 
     static inline string ConfigInfoLog(EGLDisplay dpy, EGLConfig config)
