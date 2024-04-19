@@ -122,7 +122,7 @@ namespace Graphics {
             }
         }
 
-        void Position(const DimensionType& dimension) override
+        void Position(const DimensionType& /*dimension*/) override
         {
         }
 
