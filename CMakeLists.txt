@@ -20,6 +20,7 @@ project(Screensaver)
 cmake_minimum_required(VERSION 3.3)
 
 find_package(WPEFramework)
+include(GNUInstallDirs)
 
 project_version(1.0.0)
 
