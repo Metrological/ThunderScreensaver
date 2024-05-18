@@ -73,7 +73,7 @@ target_link_libraries(${MODULE_NAME}
         ${NAMESPACE}Definitions::${NAMESPACE}Definitions)
 
 install(TARGETS ${MODULE_NAME}
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/${STORAGE_DIRECTORY}/plugins)
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/${STORAGE_DIRECTORY}/plugins)
 
 install(DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/shaders
     DESTINATION ${CMAKE_INSTALL_PREFIX}/share/${NAMESPACE}/Screensaver)
