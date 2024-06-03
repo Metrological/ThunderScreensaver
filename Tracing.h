@@ -21,7 +21,7 @@
 
 #include "Module.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Trace {
     class EGL {
     public:
@@ -55,4 +55,4 @@ namespace Trace {
         std::string _text;
     }; // class EGL
 } // namespace Screensaver
-} // namespace WPEFramework
+} // namespace Thunder

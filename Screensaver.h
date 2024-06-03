@@ -27,7 +27,7 @@
 #include <simpleworker/SimpleWorker.h>
 #include <virtualinput/virtualinput.h>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Plugin {
     class Screensaver : public PluginHost::IPlugin, public PluginHost::IWeb, public PluginHost::JSONRPC {
     private:
@@ -300,4 +300,4 @@ namespace Plugin {
         InputServer _inputServer;
     };
 } // namespace Plugin
-} // namespace WPEFramework
+} // namespace Thunder

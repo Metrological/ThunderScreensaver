@@ -21,7 +21,7 @@
 
 #include "Screensaver.h"
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace Plugin {
     namespace {
@@ -302,4 +302,4 @@ namespace Plugin {
         _previousFrames = currentFrames;
     }
 } // namespace Plugin
-} // namespace WPEFramework
+} // namespace Thunder

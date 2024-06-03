@@ -18,7 +18,7 @@
 #include <string.h>
 #include <time.h>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace EGL {
 #define CASE_STR(value) \
     case value:         \
@@ -247,4 +247,4 @@ namespace EGL {
         return stream.str();
     }
 } // namespace EGL
-} // namespace WPEFramework
+} // namespace Thunder
