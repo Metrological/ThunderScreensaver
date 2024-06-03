@@ -12,7 +12,7 @@
 
 #include <compositor/Client.h>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Graphics {
     class EGLRender : public Core::Thread {
     public:
@@ -82,4 +82,4 @@ namespace Graphics {
     }; // class EGLRender
 
 } // namespace Graphics
-} // namespace WPEFramework
+} // namespace Thunder

@@ -14,7 +14,7 @@
 
 #include <esUtil.h>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Graphics {
     constexpr char vertex_shader_source[] = "#version 300 es                          \n"
                                             "layout(location = 0) in vec4 vPosition;  \n"
@@ -137,4 +137,4 @@ namespace Graphics {
         return Core::ProxyType<IModel>(proxy);
     }
 } // namespace Graphics
-} // namespace WPEFramework
+} // namespace Thunder

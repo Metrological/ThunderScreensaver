@@ -16,7 +16,7 @@
 #include <GLES2/gl2ext.h>
 #include <esUtil.h>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Graphics {
     constexpr GLfloat vVertices[] = {
         -1.0f, -1.0f, 0.0f, //
@@ -240,4 +240,4 @@ namespace Graphics {
         return Core::ProxyType<IModel>(proxy);
     }
 } // namespace Graphics
-} // namespace WPEFramework
+} // namespace Thunder

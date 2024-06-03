@@ -12,7 +12,7 @@
 #include <compositor/Client.h>
 #include <simpleworker/SimpleWorker.h>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Graphics {
     static constexpr uint8_t RenderUpdateIntervalSeconds = 5;
 
@@ -63,7 +63,7 @@ namespace Graphics {
     {
         Stop();
 
-        Wait(WPEFramework::Core::Thread::STOPPED, WPEFramework::Core::infinite);
+        Wait(Thunder::Core::Thread::STOPPED, Thunder::Core::infinite);
 
         for (auto model : _models) {
             (model.second)->Destroy();
@@ -354,4 +354,4 @@ namespace Graphics {
     }
 
 } // namespace Graphics
-} // namespace WPEFramework
+} // namespace Thunder

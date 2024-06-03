@@ -5,7 +5,7 @@
 
 #include "Module.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Graphics {
     class EXTERNAL ModelConfig : public Core::JSON::Container {
     public:
@@ -138,4 +138,4 @@ namespace Graphics {
         virtual void Opacity(const uint8_t opacity) = 0;
     };
 } // namespace Graphics
-} // namespace WPEFramework
+} // namespace Thunder
