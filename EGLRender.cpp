@@ -138,9 +138,9 @@ namespace Graphics {
 
         EGLint majorVersion(0);
         EGLint minorVersion(0);
-        EGLint eglResult(0);
         EGLint numConfigs(0);
         EGLConfig eglConfig;
+        EGLint eglResult VARIABLE_IS_NOT_USED;
 
         _eglDisplay = eglGetDisplay(_display->Native());
         ASSERT(_eglDisplay != EGL_NO_DISPLAY);
