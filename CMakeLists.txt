@@ -31,7 +31,7 @@ message("Setup ${MODULE_NAME} v${PROJECT_VERSION}")
 find_package(${NAMESPACE}Plugins CONFIG REQUIRED)
 find_package(${NAMESPACE}Definitions CONFIG REQUIRED)
 find_package(CompileSettingsDebug CONFIG REQUIRED)
-find_package(compositorclient CONFIG REQUIRED)
+find_package(ClientCompositor CONFIG REQUIRED)
 find_package(${NAMESPACE}VirtualInput CONFIG REQUIRED)
 
 add_subdirectory(esTransorm)
@@ -67,7 +67,7 @@ target_link_libraries(${MODULE_NAME}
     PRIVATE
         esTransform::esTransform
         SimpleWorker::SimpleWorker
-        compositorclient::compositorclient
+        ClientCompositor::ClientCompositor
         ${NAMESPACE}VirtualInput::${NAMESPACE}VirtualInput
         CompileSettingsDebug::CompileSettingsDebug
         ${NAMESPACE}Plugins::${NAMESPACE}Plugins
