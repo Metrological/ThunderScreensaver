@@ -19,7 +19,7 @@ project(Screensaver)
 
 cmake_minimum_required(VERSION 3.3)
 
-find_package(Thunder)
+find_package(bridge)
 include(GNUInstallDirs)
 
 project_version(1.0.0)
@@ -32,7 +32,7 @@ find_package(${NAMESPACE}Plugins CONFIG REQUIRED)
 find_package(${NAMESPACE}Definitions CONFIG REQUIRED)
 find_package(CompileSettingsDebug CONFIG REQUIRED)
 find_package(ClientCompositor CONFIG REQUIRED)
-find_package(${NAMESPACE}VirtualInput CONFIG REQUIRED)
+find_package(ClientVirtualInput CONFIG REQUIRED)
 
 add_subdirectory(esTransorm)
 
@@ -68,7 +68,7 @@ target_link_libraries(${MODULE_NAME}
         esTransform::esTransform
         SimpleWorker::SimpleWorker
         ClientCompositor::ClientCompositor
-        ${NAMESPACE}VirtualInput::${NAMESPACE}VirtualInput
+        ClientVirtualInput::ClientVirtualInput
         CompileSettingsDebug::CompileSettingsDebug
         ${NAMESPACE}Plugins::${NAMESPACE}Plugins
         ${NAMESPACE}Definitions::${NAMESPACE}Definitions)
