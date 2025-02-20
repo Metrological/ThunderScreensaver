@@ -24,6 +24,8 @@ include(GNUInstallDirs)
 
 project_version(1.0.0)
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
+
 set(MODULE_NAME ${NAMESPACE}${PROJECT_NAME})
 
 message("Setup ${MODULE_NAME} v${PROJECT_VERSION}")
@@ -33,6 +35,9 @@ find_package(${NAMESPACE}Definitions CONFIG REQUIRED)
 find_package(CompileSettingsDebug CONFIG REQUIRED)
 find_package(ClientCompositor CONFIG REQUIRED)
 find_package(ClientVirtualInput CONFIG REQUIRED)
+
+find_package(EGL REQUIRED)
+find_package(GLESv2 REQUIRED)
 
 add_subdirectory(esTransorm)
 
@@ -71,7 +76,9 @@ target_link_libraries(${MODULE_NAME}
         ClientVirtualInput::ClientVirtualInput
         CompileSettingsDebug::CompileSettingsDebug
         ${NAMESPACE}Plugins::${NAMESPACE}Plugins
-        ${NAMESPACE}Definitions::${NAMESPACE}Definitions)
+        ${NAMESPACE}Definitions::${NAMESPACE}Definitions
+        EGL::EGL
+        GLESv2::GLESv2)
 
 install(TARGETS ${MODULE_NAME}
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/${STORAGE_DIRECTORY}/plugins)
