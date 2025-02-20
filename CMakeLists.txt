@@ -19,7 +19,7 @@ project(Screensaver)
 
 cmake_minimum_required(VERSION 3.3)
 
-find_package(bridge)
+find_package(Thunder)
 include(GNUInstallDirs)
 
 project_version(1.0.0)
