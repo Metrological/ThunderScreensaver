@@ -12,9 +12,12 @@
 
 #include <compositor/Client.h>
 
+#include <condition_variable>
+#include <mutex>
+
 namespace Thunder {
 namespace Graphics {
-    class EGLRender : public Core::Thread {
+    class EGLRender : public Core::Thread, public Compositor::IDisplay::ISurface::ICallback {
     public:
         struct EXTERNAL INotification {
             virtual ~INotification() = default;
@@ -48,6 +51,11 @@ namespace Graphics {
             return _framesRendered;
         }
 
+        // ICallback methods
+        void Rendered(Compositor::IDisplay::ISurface* surface) override;
+        void Published(Compositor::IDisplay::ISurface* surface) override;
+
+        // IThread methods
         uint32_t Worker() override;
 
         void Show();
@@ -61,6 +69,17 @@ namespace Graphics {
         }
 
     private:
+        void WaitForVSync(uint32_t timeoutMs)
+        {
+            std::unique_lock<std::mutex> lock(_rendering);
+
+            if (timeoutMs == Core::infinite) {
+                _vsync.wait(lock);
+            } else {
+                _vsync.wait_for(lock, std::chrono::milliseconds(timeoutMs));
+            }
+        }
+
         typedef std::map<uint32_t, Core::ProxyType<IModel>> ModelMap;
 
         mutable Core::CriticalSection _adminLock;
@@ -79,6 +98,10 @@ namespace Graphics {
 
         bool _suspend;
         bool _active;
+
+        std::condition_variable _vsync;
+        std::mutex _rendering;
+
     }; // class EGLRender
 
 } // namespace Graphics

@@ -52,11 +52,15 @@ namespace Graphics {
         , _models()
         , _suspend(false)
         , _active(false)
+        , _vsync()
+        , _rendering()
     {
+        std::cout << __FILE__ << ":" << __LINE__ << " : " << __FUNCTION__ << std::endl;
     }
 
     EGLRender::~EGLRender()
     {
+        std::cout << __FILE__ << ":" << __LINE__ << " : " << __FUNCTION__ << std::endl;
     }
 
     void EGLRender::Deinitialize()
@@ -98,7 +102,7 @@ namespace Graphics {
         _display = Compositor::IDisplay::Instance(strm.str());
         ASSERT(_display != nullptr);
 
-        _surface = _display->Create(strm.str(), width, height);
+        _surface = _display->Create(strm.str(), width, height, this);
         ASSERT(_surface != nullptr);
 
         return InitEGL();
@@ -326,7 +330,9 @@ namespace Graphics {
     {
         if (eglSwapBuffers(_eglDisplay, _eglSurface) == GL_TRUE) {
             ++_framesRendered;
-            _display->Process(_framesRendered);
+            _surface->RequestRender();
+
+            WaitForVSync(Core::infinite);
         } else {
             TRACE(Trace::Error, ("eglSwapBuffers failed error=%s", EGL::ErrorString(eglGetError())));
         }
@@ -351,6 +357,15 @@ namespace Graphics {
         UnlockContext();
 
         return ((_fps == 0) || (_suspend == true)) ? Core::infinite : (1000 / _fps);
+    }
+
+    void EGLRender::Rendered(Compositor::IDisplay::ISurface* surface VARIABLE_IS_NOT_USED)
+    {
+    }
+
+    void EGLRender::Published(Compositor::IDisplay::ISurface* surface VARIABLE_IS_NOT_USED)
+    {
+        _vsync.notify_all();
     }
 
 } // namespace Graphics
