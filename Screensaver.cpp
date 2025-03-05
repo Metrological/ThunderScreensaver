@@ -170,10 +170,6 @@ namespace Plugin {
             message = "No render models found.";
         }
 
-        if (message.empty() == false) {
-            Deinitialize(service);
-        }
-
         return message;
     }
 

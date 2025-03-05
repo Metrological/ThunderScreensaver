@@ -332,7 +332,9 @@ namespace Graphics {
             ++_framesRendered;
             _surface->RequestRender();
 
-            WaitForVSync(Core::infinite);
+            if (WaitForVSync(1000) == false) {
+                TRACE(Trace::Error, ("Did not receive a VSync for 1s"));
+            }
         } else {
             TRACE(Trace::Error, ("eglSwapBuffers failed error=%s", EGL::ErrorString(eglGetError())));
         }

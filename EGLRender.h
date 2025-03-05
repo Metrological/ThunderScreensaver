@@ -69,15 +69,18 @@ namespace Graphics {
         }
 
     private:
-        void WaitForVSync(uint32_t timeoutMs)
+        bool WaitForVSync(uint32_t timeoutMs)
         {
+            bool signaled = true;
             std::unique_lock<std::mutex> lock(_rendering);
 
             if (timeoutMs == Core::infinite) {
                 _vsync.wait(lock);
             } else {
-                _vsync.wait_for(lock, std::chrono::milliseconds(timeoutMs));
+                signaled = (_vsync.wait_for(lock, std::chrono::milliseconds(timeoutMs)) == std::cv_status::no_timeout);
             }
+
+            return (signaled);
         }
 
         typedef std::map<uint32_t, Core::ProxyType<IModel>> ModelMap;
