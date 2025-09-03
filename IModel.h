@@ -12,7 +12,7 @@ namespace Graphics {
         ModelConfig(const ModelConfig& copy)
             : Core::JSON::Container()
             , X(copy.X)
-            , Y(copy.X)
+            , Y(copy.Y)
             , Z(copy.Z)
             , Height(copy.Height)
             , Width(copy.Width)
@@ -41,7 +41,7 @@ namespace Graphics {
             Width = RHS.Width;
             VertexShaderSource = RHS.VertexShaderSource;
             VertexShaderFile = RHS.VertexShaderFile;
-            FragmentShaderSource = RHS.VertexShaderSource;
+            FragmentShaderSource = RHS.FragmentShaderSource;
             FragmentShaderFile = RHS.FragmentShaderFile;
 
             return (*this);
