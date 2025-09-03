@@ -71,16 +71,19 @@ namespace Graphics {
     private:
         bool WaitForVSync(uint32_t timeoutMs)
         {
-            bool signaled = true;
             std::unique_lock<std::mutex> lock(_rendering);
 
             if (timeoutMs == Core::infinite) {
-                _vsync.wait(lock);
+                _vsync.wait(lock, [this] { return _frameReady.load(); });
             } else {
-                signaled = (_vsync.wait_for(lock, std::chrono::milliseconds(timeoutMs)) == std::cv_status::no_timeout);
+                bool signaled = _vsync.wait_for(lock, std::chrono::milliseconds(timeoutMs),
+                    [this] { return _frameReady.load(); });
+                if (!signaled)
+                    return false;
             }
 
-            return (signaled);
+            _frameReady = false; // Reset for next frame
+            return true;
         }
 
         typedef std::map<uint32_t, Core::ProxyType<IModel>> ModelMap;
@@ -96,6 +99,7 @@ namespace Graphics {
 
         uint16_t _fps;
         uint32_t _framesRendered;
+        std::atomic<bool> _frameReady;
 
         ModelMap _models;
 

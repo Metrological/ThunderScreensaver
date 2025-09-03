@@ -49,6 +49,7 @@ namespace Graphics {
         , _eglDisplay(EGL_NO_DISPLAY)
         , _fps(60)
         , _framesRendered(0)
+        , _frameReady(false)
         , _models()
         , _suspend(false)
         , _active(false)
