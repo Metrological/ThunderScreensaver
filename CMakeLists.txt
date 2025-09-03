@@ -40,7 +40,7 @@ find_package(EGL REQUIRED)
 find_package(GLESv2 REQUIRED)
 
 add_subdirectory(include)
-add_subdirectory(esTransorm)
+add_subdirectory(esTransform)
 add_subdirectory(simpleworker)
 
 set(PLUGIN_SCREENSAVER_STARTMODE "Deactivated" CACHE STRING "Automatically start plugin")
