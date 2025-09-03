@@ -15,9 +15,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-project(Screensaver)
+cmake_minimum_required(VERSION 3.12)
 
-cmake_minimum_required(VERSION 3.3)
+project(Screensaver)
 
 find_package(Thunder)
 include(GNUInstallDirs)
@@ -39,23 +39,21 @@ find_package(ClientVirtualInput CONFIG REQUIRED)
 find_package(EGL REQUIRED)
 find_package(GLESv2 REQUIRED)
 
+add_subdirectory(include)
 add_subdirectory(esTransorm)
-
 add_subdirectory(simpleworker)
 
 set(PLUGIN_SCREENSAVER_STARTMODE "Deactivated" CACHE STRING "Automatically start plugin")
-
 set(PLUGIN_SCREENSAVER_TIMEOUT 30 CACHE STRING "Timeout in seconds of inactivaty to start the show the screensaver")
 set(PLUGIN_SCREENSAVER_FADEIN 1000 CACHE STRING "Fade in time in milliseconds")
 set(PLUGIN_SCREENSAVER_INSTANT true CACHE STRING "Instant start the screensaver after plugin start")
-
 set(PLUGIN_SCREENSAVER_INTERVAL 10 CACHE STRING "Interval between checks to trigger the screensaver in seconds")
 set(PLUGIN_SCREENSAVER_REPORTFPS true CACHE STRING "Report FPS")
 
 add_library(${MODULE_NAME} SHARED
     Module.cpp
     EGLRender.cpp
-    EGLShader.cpp
+    models/EGLShader.cpp
     Screensaver.cpp)
 
 #target_sources(${MODULE_NAME} PRIVATE
@@ -70,6 +68,7 @@ set_target_properties(${MODULE_NAME} PROPERTIES
 
 target_link_libraries(${MODULE_NAME}
     PRIVATE
+        common::include 
         esTransform::esTransform
         SimpleWorker::SimpleWorker
         ClientCompositor::ClientCompositor
@@ -81,9 +80,11 @@ target_link_libraries(${MODULE_NAME}
         GLESv2::GLESv2)
 
 install(TARGETS ${MODULE_NAME}
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/${STORAGE_DIRECTORY}/plugins)
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/${STORAGE_DIRECTORY}/plugins COMPONENT ${NAMESPACE}_Runtime)
 
-install(DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/shaders
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/share/${NAMESPACE}/Screensaver)
+
+install(TARGETS ${PLATFORM_COMPOSITOR}
+        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${NAMESPACE}/Screensaver COMPONENT ${NAMESPACE}_Runtime
+)
 
 write_config()

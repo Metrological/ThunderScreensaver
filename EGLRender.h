@@ -2,8 +2,8 @@
 
 #include "Module.h"
 
-#include "IModel.h"
-#include "Tracing.h"
+#include <IModel.h>
+#include <Tracing.h>
 
 #ifndef GL_ES_VERSION_2_0
 #include <GLES2/gl2.h>

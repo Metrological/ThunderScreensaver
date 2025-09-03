@@ -1,7 +1,7 @@
 #include "Module.h"
 
 #include "EGLRender.h"
-#include "EGLToolbox.h"
+#include <EGLToolbox.h>
 
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
@@ -367,7 +367,8 @@ namespace Graphics {
 
     void EGLRender::Published(Compositor::IDisplay::ISurface* surface VARIABLE_IS_NOT_USED)
     {
-        _vsync.notify_all();
+        _frameReady = true;
+        _vsync.notify_one();
     }
 
 } // namespace Graphics

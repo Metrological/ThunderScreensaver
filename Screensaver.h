@@ -22,7 +22,7 @@
 #include "Module.h"
 
 #include "EGLRender.h"
-#include "IModel.h"
+#include <IModel.h>
 
 #include <simpleworker/SimpleWorker.h>
 #include <virtualinput/virtualinput.h>

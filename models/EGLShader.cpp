@@ -1,10 +1,10 @@
 #include "Module.h"
 
-#include "EGLToolbox.h"
+#include <EGLToolbox.h>
 
-#include "IModel.h"
+#include <IModel.h>
 
-#include "Tracing.h"
+#include <Tracing.h>
 
 #include <core/core.h>
 

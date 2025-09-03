@@ -1,10 +1,10 @@
 #include "Module.h"
 
-#include "EGLToolbox.h"
+#include <EGLToolbox.h>
 
-#include "IModel.h"
+#include <IModel.h>
 
-#include "Tracing.h"
+#include <Tracing.h>
 
 #ifndef GL_ES_VERSION_2_0
 #include <GLES2/gl2.h>
