@@ -83,6 +83,7 @@ namespace Plugin {
         : _skipURL(0)
         , _eglRender()
         , _service(nullptr)
+        , _triggered(false)
         , _previousFrames(0)
         , _previousTimeMS(0)
         , _interval(5000)
