@@ -56,12 +56,6 @@ add_library(${MODULE_NAME} SHARED
     models/EGLShader.cpp
     Screensaver.cpp)
 
-#target_sources(${MODULE_NAME} PRIVATE
-#    EGLCube.cpp)
-
-#target_sources(${MODULE_NAME} PRIVATE
-#    EGLTriangle.cpp)
-
 set_target_properties(${MODULE_NAME} PROPERTIES
         CXX_STANDARD 11
         CXX_STANDARD_REQUIRED YES)
@@ -82,9 +76,6 @@ target_link_libraries(${MODULE_NAME}
 install(TARGETS ${MODULE_NAME}
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/${STORAGE_DIRECTORY}/plugins COMPONENT ${NAMESPACE}_Runtime)
 
-
-install(TARGETS ${PLATFORM_COMPOSITOR}
-        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${NAMESPACE}/Screensaver COMPONENT ${NAMESPACE}_Runtime
-)
-
 write_config()
+
+add_subdirectory(models)
