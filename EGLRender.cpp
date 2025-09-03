@@ -148,12 +148,17 @@ namespace Graphics {
         EGLConfig eglConfig;
 
         _eglDisplay = eglGetDisplay(_display->Native());
-        ASSERT(_eglDisplay != EGL_NO_DISPLAY);
+        if (_eglDisplay == EGL_NO_DISPLAY) {
+            TRACE(Trace::Error, ("Failed to get EGL display: %s", EGL::ErrorString(eglGetError())));
+            return false;
+        }
 
         TRACE(Trace::Information, ("EGL Display %p", _eglDisplay));
 
-        eglResult = eglInitialize(_eglDisplay, &majorVersion, &minorVersion);
-        ASSERT(eglResult == EGL_TRUE);
+        if (eglInitialize(_eglDisplay, &majorVersion, &minorVersion) != EGL_TRUE) {
+            TRACE(Trace::Error, ("Failed to initialize EGL: %s", EGL::ErrorString(eglGetError())));
+            return false;
+        }
 
         TRACE(Trace::Information, ("Initialized EGL v%d.%d", majorVersion, minorVersion));
 
